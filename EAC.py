@@ -23,7 +23,7 @@ def mask_correlated_samples(batch_size):
     mask = tf.logical_and(mask, update_matrix)
     return mask
 
-def cts_loss_diff_samples(z_i, z_j, temp, batch_size):  # B * D    B * D
+def EAC(z_i, z_j, temp, batch_size):  # B * D    B * D
     # z_i = tf.nn.l2_normalize(z_i, axis=1)
     # z_j = tf.nn.l2_normalize(z_j, axis=1)
 
