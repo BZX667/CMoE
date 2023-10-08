@@ -162,12 +162,12 @@ def custom_model_fn(mode, feat_ids, x_concat, loss, optimizer, expert_concat, le
             lr_print = tf.Print(learning_rate_exp, [learning_rate_exp], "lr: %.16f")
 
             if (expert_loss & sample_loss):
-                cl_loss = 0.01*loss_function.cts_loss_diff_experts(last_hidden_states=expert_concat, batch_size=FLAGS.batch_size)
+                cl_loss = 0.01*loss_function.EUC(last_hidden_states=expert_concat, batch_size=FLAGS.batch_size)
                 cl_loss_print = tf.Print(cl_loss, [cl_loss], "cl_loss: %.16f")
                 cl_optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate*1/6, beta1=0.9, beta2=0.999, epsilon=1e-8)
                 cl_train_op = cl_optimizer.minimize(cl_loss, global_step=tf.train.get_global_step())
 
-                cts_loss_diff_samples = loss_function.cts_loss_diff_samples(z_i=x_concat_map, z_j=x_concat_cfm_map, temp=0.01, batch_size=FLAGS.batch_size)
+                cts_loss_diff_samples = loss_function.EAC(z_i=x_concat_map, z_j=x_concat_cfm_map, temp=0.01, batch_size=FLAGS.batch_size)
                 cts_loss_diff_samples_print = tf.Print(cts_loss_diff_samples, [cts_loss_diff_samples], "cl_loss: %.16f")
                 cts_samples_optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate*0.01, beta1=0.9, beta2=0.999, epsilon=1e-8)
                 cts_samples_train_op = cts_samples_optimizer.minimize(cts_loss_diff_samples, global_step=tf.train.get_global_step())
@@ -189,7 +189,7 @@ def custom_model_fn(mode, feat_ids, x_concat, loss, optimizer, expert_concat, le
 
             elif expert_loss:
                 # expert_concat_map = loss_function.projection_head_map2(expert_concat, expert_dnn_hidden_units[-1])
-                cl_loss = loss_function.cts_loss_diff_experts(last_hidden_states=expert_concat, batch_size=FLAGS.batch_size)
+                cl_loss = loss_function.EUC(last_hidden_states=expert_concat, batch_size=FLAGS.batch_size)
                 cl_loss_print = tf.Print(cl_loss, [cl_loss], "cl_loss: %.16f")
                 cl_optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate*0.56, beta1=0.9, beta2=0.999, epsilon=1e-8)
                 cl_train_op = cl_optimizer.minimize(cl_loss, global_step=tf.train.get_global_step())
@@ -197,7 +197,7 @@ def custom_model_fn(mode, feat_ids, x_concat, loss, optimizer, expert_concat, le
                 hooks = [tf.train.LoggingTensorHook({"cl_loss": cl_loss_print}, every_n_iter=10)]
 
             elif sample_loss:
-                cts_loss_diff_samples = loss_function.cts_loss_diff_samples(z_i=x_concat_map, z_j=x_concat_cfm_map,temp=0.01,batch_size=FLAGS.batch_size)
+                cts_loss_diff_samples = loss_function.EAC(z_i=x_concat_map, z_j=x_concat_cfm_map,temp=0.01,batch_size=FLAGS.batch_size)
                 cts_loss_diff_samples_print = tf.Print(cts_loss_diff_samples, [cts_loss_diff_samples], "cl_loss: %.16f")
                 cts_samples_optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9,beta2=0.999, epsilon=1e-8)
                 cts_samples_train_op = cts_samples_optimizer.minimize(cts_loss_diff_samples,global_step=tf.train.get_global_step())
@@ -275,7 +275,7 @@ def model_fn(features, labels, mode, params):
         Feat_Emb = tf.get_variable(name='embeddings', shape=[feature_size_thre, embedding_size],
                                    initializer=tf.glorot_normal_initializer())
         common_embs = tf.nn.embedding_lookup(Feat_Emb, feat_ids)  # None * F * K
-        # reshape£¬±£Ö¤ÆäµÚÒ»µÚ¶şÎ¬¶ÈºÍembeddingÒ»ÖÂ
+        # reshapeï¼Œä¿è¯å…¶ç¬¬ä¸€ç¬¬äºŒç»´åº¦å’Œembeddingä¸€è‡´
         feat_vals = tf.reshape(feat_vals, shape=[-1, field_size, 1])
         common_embs = tf.multiply(common_embs, feat_vals)  # None * F * K
         sum_square = tf.square(tf.reduce_sum(common_embs, 1))  # None * K
@@ -472,17 +472,17 @@ def main(_):
 
     # day_before_yest_0 = (datetime.date.today() + datetime.timedelta(days=-9)).strftime('%Y-%m-%d')
     FLAGS.model_dir = FLAGS.model_dir + 'model_ckpt_mmoe_cl_loss'+'_expert_'+str(expert_loss) + '_sample_' + str(sample_loss)
-    # ÉèÖÃĞèÒª¶ÁÈ¡µÄÎÄ¼ş¼ĞÁĞ±í
+    # è®¾ç½®éœ€è¦è¯»å–çš„æ–‡ä»¶å¤¹åˆ—è¡¨
     # tr_data_dirs = ['/data/ESSM/2023-07-01_tfrecord_mmoe_2']
     # va_data_dirs = ['/data/ESSM/2023-07-02_tfrecord_mmoe_2']
 
     tr_data_dirs = ['/data/ESSM/2023-07-01_tfrecord_mmoe_2']
     va_data_dirs = ['/data/double_price/2023-07-02_tfrecord_cvr_2']
 
-    # ³õÊ¼»¯Ò»¸ö¿ÕÁĞ±íÀ´´æ´¢ËùÓĞµÄÎÄ¼ş
+    # åˆå§‹åŒ–ä¸€ä¸ªç©ºåˆ—è¡¨æ¥å­˜å‚¨æ‰€æœ‰çš„æ–‡ä»¶
     tr_files = []
     for data_dir in tr_data_dirs:
-        # Ê¹ÓÃÍ¨Åä·ûÀ´Æ¥ÅäÎÄ¼ş¼ĞÖĞµÄËùÓĞÎÄ¼ş
+        # ä½¿ç”¨é€šé…ç¬¦æ¥åŒ¹é…æ–‡ä»¶å¤¹ä¸­çš„æ‰€æœ‰æ–‡ä»¶
         files = glob.glob("{0}/tr*.tfrecord".format(data_dir))
         tr_files.extend(files)
     random.shuffle(tr_files)
@@ -490,7 +490,7 @@ def main(_):
 
     va_files = []
     for data_dir in va_data_dirs:
-        # Ê¹ÓÃÍ¨Åä·ûÀ´Æ¥ÅäÎÄ¼ş¼ĞÖĞµÄËùÓĞÎÄ¼ş
+        # ä½¿ç”¨é€šé…ç¬¦æ¥åŒ¹é…æ–‡ä»¶å¤¹ä¸­çš„æ‰€æœ‰æ–‡ä»¶
         files = glob.glob("%s/tr*tfrecord" % data_dir)
         va_files.extend(files)
     random.shuffle(va_files)
@@ -595,5 +595,5 @@ def main(_):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)  # ÉèÖÃÈÕÖ¾¼¶±ğÎªINFO
+    logging.basicConfig(level=logging.INFO)  # è®¾ç½®æ—¥å¿—çº§åˆ«ä¸ºINFO
     tf.app.run()
