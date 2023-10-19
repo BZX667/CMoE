@@ -9,17 +9,12 @@ import random
 
 def mask_correlated_samples(batch_size):
     N = 2 * batch_size
-    # 构造全1矩阵
     mask = tf.ones((N, N), dtype=tf.bool, name='mask')
-    # 构造对角线为0的掩码矩阵
     diag = tf.ones((N,), dtype=tf.bool)
     mask = tf.linalg.set_diag(mask, diag)
-    # 创建索引和值矩阵
     indices = tf.concat([tf.range(batch_size), tf.range(batch_size)], axis=0)
     updates = tf.concat([tf.zeros(batch_size, dtype=bool), tf.ones(batch_size, dtype=bool)], axis=0)
-    # 根据索引和值矩阵创建更新矩阵
     update_matrix = tf.scatter_nd(tf.expand_dims(indices, axis=1), tf.expand_dims(updates, axis=1), shape=[N, 1])
-    # 对全1矩阵和更新矩阵进行逻辑与运算
     mask = tf.logical_and(mask, update_matrix)
     return mask
 
