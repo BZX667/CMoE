@@ -2,7 +2,7 @@
 This is code for Improving Alignment and Uniformity of Expert Representation with Contrastive Learning for Mixture-of-Experts model
 
 ## Environment Setup
-1.tensorflow=1.15
+1.tensorflow=1.15 \
 2.python=3.6.8
 
 ## Guideline
