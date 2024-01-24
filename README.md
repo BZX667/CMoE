@@ -8,13 +8,13 @@ This is code for Improving Alignment and Uniformity of Expert Representation wit
 ## Guideline
 
 ### models
-```EAR.py``` Expert Agreement Regularization
-```EHP.py``` Expert Homogeneity Penalty
-```data_augment.py``` Data augment methods
-```project_head.py``` Projection head function
-```model``` MoE based model including MMoE, PLE, etc.
+```EAR.py``` Expert Agreement Regularization \
+```EHP.py``` Expert Homogeneity Penalty \
+```data_augment.py``` Data augment methods \
+```project_head.py``` Projection head function \
+```model``` MoE based model including MMoE, PLE, etc. \
 
 ### Example to run the codes
-bash MMOE.sh
+bash MMOE.sh \
 bash PLE.sh
 
